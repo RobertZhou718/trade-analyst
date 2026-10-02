@@ -1,0 +1,8 @@
+{
+  "skill_name": "trade-analyst",
+  "evals": [
+    {"id": 1, "prompt": "我是波段交易者，一般持仓2-4周，单笔最多亏组合的1%，单只仓位不超过15%，不用杠杆不做空，技术面+消息面结合。NVDA 现在能买吗？给我入场、止损和仓位建议，做成一个我能回看的仪表盘。", "expected_output": "Dashboard with clear action, entry/stop/targets, position size computed from 1% risk & 15% cap, technical + news + macro/policy (export controls, Fed) factors, earnings date check, data timestamp.", "files": []},
+    {"id": 2, "prompt": "I hold SHOP.TO, bought around 140 CAD. With all the US-Canada tariff headlines lately, should I trim? I'm a medium-term investor (a few months), moderate risk, I check prices once a day after close.", "expected_output": "Holder-oriented action (hold/trim/sell) for the TSX listing, considers CAD/USD & interlisted SHOP, US-Canada trade policy, closing-basis stops suited to after-close checking, catalysts, dashboard.", "files": []},
+    {"id": 3, "prompt": "BTC 最近怎么看？我比较激进，能接受单笔亏3%，但不用杠杆，每天只看一次盘，持有周期几周到两三个月。", "expected_output": "Crypto-specific analysis (24/7, wider ATR stops, ETF flows, regulation, macro liquidity), sizing from 3% risk with wide stop, no leverage suggestions, dashboard.", "files": []}
+  ]
+}
