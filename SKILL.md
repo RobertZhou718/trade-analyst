@@ -1,6 +1,11 @@
 ---
 name: trade-analyst
 description: Personal trading analyst for US stocks, Canadian (TSX/TSXV) stocks, ETFs and crypto. Pulls live/recent prices, computes technical indicators, researches news, macro, policy and political drivers, and combines them with the user's saved trading style into a concrete call (buy/add/hold/trim/sell/wait with entry, stop, targets, position size, confidence) delivered as a revisitable web dashboard. Use whenever the user asks about a ticker or coin in a trading/investing sense, e.g. "NVDA 能不能买", "SHOP.TO 现在什么位置", "should I sell my TSLA", "BTC 怎么看", "帮我看看这只股票", "分析一下我的持仓", "这个新闻对 AAPL 有什么影响", "set up my trading profile", even if they don't say "analysis".
+license: MIT
+compatibility: Requires Python 3 with pandas and numpy (yfinance auto-installed), plus internet access for market data and news. Works best in agents that can run scripts, search the web and write files.
+metadata:
+  author: Robert
+  version: "1.0"
 ---
 
 # Trade Analyst
@@ -27,50 +32,15 @@ Reply in the user's language (default 简体中文 if they write Chinese). RSI/M
 
 ## 0. Trader profile
 
-Look for a saved profile first: memory file `/topics/trading-style.md` (if memory tools exist), else `trading_profile.json` in a connected folder or the working dir.
+Look for a saved profile first: memory file `/topics/trading-style.md` (if a memory tool exists), else `trading_profile.json` in a connected folder or the working dir.
 
 - **Found** → apply silently; mention it only in the dashboard's "fit" section.
-- **Not found** → run the questionnaire below, save, then do the analysis. If the user clearly wants a quick answer now, analyse with stated defaults (swing, 1% risk, max position by risk tier below, no leverage) and ask the questionnaire at the end.
+- **Not found** → run the 8-question questionnaire in [references/trader-profile.md](references/trader-profile.md), save it, then do the analysis. If the user clearly wants a quick answer now, use the stated defaults (swing, 1% risk, max position by risk tier, no leverage) and ask the questionnaire at the end.
 - "我现在偏长线了 / update my profile" → update storage, confirm in one line.
-- Profile info stated in the message itself overrides the stored one for that request.
+- Profile info in the message itself overrides the stored one for that request.
+- Sizing is always in % of portfolio — never ask for or store account balances or dollar amounts.
 
-### Questionnaire (8 questions; AskUserQuestion tool if available — max 4 per call, so two calls; else numbered text so they can reply "1B 2A…")
-
-1. 持仓周期 — 日内 · 短线波段(2天–3周) · 中线(1–6个月) · 长线(6个月+)
-2. 单笔风险 — 保守 0.5% · 稳健 1% · 进取 2% · 激进 3%+（单笔最多亏组合的%）
-3. 分析偏好 — 技术面为主 · 基本面为主 · 技术+基本面 · 消息/动量驱动
-4. 品种(多选) — 美股 · 加股 TSX · ETF(含杠杆ETF?) · 加密货币
-5. 单只最大仓位 — ≤5% · 5–10% · 10–20% · >20%
-6. 看盘频率 — 全天 · 每天几次 · 只在收盘后 · 每周一次
-7. 杠杆/做空/期权 — 都不用 · 偶尔做空或期权 · 常用保证金/杠杆
-8. 主要目标 — 跑赢大盘 · 稳定现金流 · 高增长高风险 · 保值避险
-
-Optional free text → `rules` (e.g. "不碰中概", "TFSA 账户").
-
-**Defaults when a field is missing** (say which you assumed): horizon swing; risk 1%; max single position by risk tier — 0.5%→5%, 1%→10%, 2%→15%, 3%+→20% (crypto counts as one position); no leverage; technical+fundamental.
-
-### Storage
-
-1. Memory tool: `/topics/trading-style.md` (read first for the version token; frontmatter per the memory system; lines tagged `[stated]`). Store style facts only — horizon, risk %, caps, preferences, instruments, rules, watchlist tickers. **Never** store account balances, dollar P&L, or position dollar amounts.
-2. Else `trading_profile.json` in a connected folder; else the working dir (tell the user it lasts this session only).
-
-Never ask for portfolio dollar size — sizing is in % of portfolio.
-
-### How the profile changes the analysis
-
-| Field | Effect |
-|---|---|
-| intraday | `--interval 15m --period 5d` + daily context. Weights: technicals 50, flow/news 30, today's macro calendar 20. Stops 0.5–1× intraday ATR; VWAP, opening range, pre-market gaps. |
-| swing | Daily 1y + weekly. Technicals 40, catalysts/news 25, macro/policy 20, fundamentals 15. Stops 1.5–2× ATR beyond structure. Earnings date inside window is mandatory to check. |
-| position (months) | Daily + weekly 2y. Fundamentals/valuation 35, trend 25, macro/policy 25, news 15. Stops 2.5–3× ATR or below weekly structure; scale in. |
-| long_term | Weekly 5y. Fundamentals/moat 50, secular macro 25, valuation timing 25. Entry zones + tranche/DCA rather than tight stops. |
-| risk % | position % = risk % ÷ stop distance %, capped at max position. Show the arithmetic; if the cap binds, say so and state actual risk. |
-| style | technical → lead with structure; fundamental → lead with business/valuation, technicals for timing; momentum/news → catalysts, relative strength, volume, time stops. |
-| screen time after-close/weekly | Closing-basis stops ("收盘跌破X") + a resting catastrophe stop order; limit entries; no intraday setups. |
-| no leverage | No shorts/options/leveraged ETFs; bearish = 减仓/卖出/观望. |
-| leverage ok | May mention hedges (puts, inverse ETFs) with their risks (decay, margin calls). |
-| cash-flow goal | Dividend yield, ex-div, payout sustainability, covered calls. |
-| rules | Hard filters — flag conflicts before analysing. |
+Read [references/trader-profile.md](references/trader-profile.md) for the questionnaire, defaults, storage rules, and the table of how each profile field changes timeframe, factor weights, stops and size.
 
 ---
 
@@ -122,22 +92,7 @@ Save as CSV → `indicators.py`.
 
 Always search for the *current* state — officeholders, policy rates, tariff levels and event dates change. Record a date + source for every item; a 4-month-old article is context, not a catalyst. Prefer company IR / SEC / SEDAR+, Reuters, Bloomberg, WSJ, FT, CNBC, Globe and Mail / BNN Bloomberg, central-bank sites, CoinDesk / The Block.
 
-**Macro transmission cheat-sheet**
-
-| Driver | Most sensitive |
-|---|---|
-| Fed / rate expectations, 10y & real yields | unprofitable tech, small caps, REITs, crypto, gold |
-| Bank of Canada, CAD | Canadian banks, REITs, utilities, telecoms; weak CAD helps USD earners listed on TSX |
-| CPI/PCE, jobs (NFP; Canada LFS) | growth multiples, cyclicals |
-| USD (DXY) | multinationals, commodities |
-| Oil (WTI, WCS), gold, copper | TSX energy & materials, airlines |
-| VIX, credit spreads, liquidity/ETF flows | high beta, crypto |
-
-**Political & policy factors to check:** tariffs & retaliation (US–Canada–Mexico/CUSMA matters a lot for TSX goods producers), export controls (chips), fiscal policy / shutdowns (delay data), regulation & antitrust, crypto rules (SEC/CFTC, stablecoin/market-structure bills, ETF approvals), elections & central-bank leadership, geopolitics/sanctions (oil, defense, safe havens), sector programs (defense, healthcare, pipelines, subsidies). For each that applies: *what happened (date) → mechanism → direction for this asset → how priced-in*. Describe policy effects neutrally, not whether a policy is good.
-
-**News triage** (impact high→low): earnings/guidance → M&A, contracts, approvals, rulings → analyst changes (clusters matter) → insider buying, buybacks, dilution → management changes → opinion pieces. Tag each `+ / - / 0` with one line why.
-
-Sentiment when available: short interest % float, options skew/unusual activity, consensus vs price; crypto funding/OI/ETF flows. One-sided extremes = caution flag, not a signal.
+Then read [references/macro-news-politics.md](references/macro-news-politics.md) to judge what you found: macro transmission by sector, the political/policy factors to check (tariffs, export controls, regulation, elections, crypto rules…), news-impact triage, and sentiment. For each factor that applies, state *what happened (date) → mechanism → direction for this asset → how priced-in*, and describe policy effects neutrally.
 
 ## 4. Synthesize the call
 
@@ -228,3 +183,5 @@ Then one line that this is analysis, not investment advice (once), assumptions y
 - `scripts/fetch_data.py` — OHLCV + quote snapshot + headlines (yfinance; Coinbase fallback for crypto). Exit code 2 = all sources blocked → use the fallback tiers above.
 - `scripts/indicators.py` — SMA/EMA, RSI, MACD, ADX, ATR, Bollinger, volume ratio, 52w range, S/R pivots, relative strength, signal tags, chart data.
 - `scripts/build_dashboard.py` — analysis JSON → self-contained HTML dashboard (inline SVG candles, MAs, levels; light/dark).
+- `references/trader-profile.md` — questionnaire, defaults, storage, profile → analysis mapping.
+- `references/macro-news-politics.md` — macro transmission, political/policy factors, news triage, sentiment.

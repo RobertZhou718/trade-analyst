@@ -19,6 +19,9 @@ Ask about a ticker ("Should I buy NVDA here?", "I hold SHOP.TO at 140, should I 
 ```
 trade-analyst/
 ├── SKILL.md                  # Instructions Claude follows (workflow, profile, TA playbook, macro/politics, output format)
+├── references/
+│   ├── trader-profile.md      # Questionnaire, defaults, how the profile changes the analysis
+│   └── macro-news-politics.md # Macro transmission, policy/political factors, news triage
 ├── scripts/
 │   ├── fetch_data.py         # OHLCV + quote + headlines via yfinance (Coinbase fallback for crypto)
 │   ├── indicators.py         # Technical snapshot from any OHLCV CSV → JSON
